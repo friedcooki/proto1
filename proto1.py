@@ -89,7 +89,7 @@ class Button():
         return action
 
 
-
+#def userAdd():
 
 
 #instances for the buttons      
@@ -156,14 +156,27 @@ while run:
                     loginActive = False #once enter is pressed you cannot type again
                     userEntered = True
                 elif loginActive == True:
-                    username = username + event.unicode # adds to the username str
+                    if event.key == pygame.K_BACKSPACE:
+                        username = username[:-1]                    
+                    else:
+                        username = username + event.unicode # adds to the username str
+
                 if signupActive == True and loginActive == False: #if the user selected sign up this makes sure they can type in the second box
                     if event.key == pygame.K_RETURN:
                         signupActive = False
-                        newUser = True
-                        userEntered = False
+                        if username == usernameConfirm: #checks if the username and confirm username are the same
+                            newUser = True #if it is then it registers that it is able to be entered
+                            userEntered = False
+                        elif username != usernameConfirm:
+                            signupActive = True #if not it lets the user retry to match them up
                     else:
-                        usernameConfirm = usernameConfirm + event.unicode
+                        if event.key == pygame.K_BACKSPACE and loginActive == False:
+                            usernameConfirm = usernameConfirm[:-1]                        
+                        else:
+                            usernameConfirm = usernameConfirm + event.unicode
+
+
+
 
 
 
@@ -192,6 +205,9 @@ while run:
         pygame.draw.rect(screen,(255,255,255), signupTextRect)
         textDraw("Enter username:", normalFont, textColour, 640, 525)
         textDraw("Confirm username:", normalFont, textColour, 640, 610)
+
+    if username != usernameConfirm and signupActive == True:
+        textDraw("the usernames you have entered dont match, please try again", normalFont, (255,0,0), 750, 800)
     
     textDraw( username, normalFont, inputColour, 640, 560)
     textDraw( usernameConfirm, normalFont, inputColour, 640, 640)
@@ -203,4 +219,3 @@ while run:
     if newUser == True:
         if confirmButton.draw() == True:
                 print("sign up")
-# check teams for implimentaion powerpoint for more info on what to actually do other than write the code
