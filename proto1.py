@@ -29,7 +29,9 @@ inputColour: tuple[int,int,int] = (0,0,0)
 welcomeFont: pygame.font.Font = pygame.font.SysFont("arialblack", 40)
 normalFont: pygame.font.Font = pygame.font.SysFont("arial", 20)
 userEntered : bool = False
-newUser: bool = True
+newUser: bool = False
+added = None
+searchResult = None
 
 #button images
 loginButton = pygame.image.load("loginButton.png").convert_alpha()
@@ -66,7 +68,7 @@ class Button():
 
         should be called once per frame, checks the mouse position and its left click state, it then blits the button onto the global surface "screen"
 
-        returns:
+        Returns:
             bool: True if the button is clicked, false if not
         """
 
@@ -89,8 +91,37 @@ class Button():
         return action
 
 
-#def userAdd():
+def userAdd(username: str):
+    """
+    Adds a new username to the database.
 
+    Args:
+        username (str): A string that was entered by the user on the login screen.
+
+    Returns:
+        bool: True if the username is added, false if it wasnt added because it wasnt unique
+    """
+    try:
+        with data: #reverts back if theres an error
+            data.execute(
+                "INSERT INTO users (username) VALUES (?)", #? is just a place holder, thats why the (username,) is there after
+                (username,), #the comma is needed since .execute is expecting a tuple in this case
+            )
+        return True
+    except sqlite3.IntegrityError:
+        return False # in this case the username already exists 
+    
+def userSearch(username: str):
+    """
+    searches for the username entered by the user
+
+    Args:
+        username (str): A string that was entered by the user
+    Returns:
+        bool: True if the username is found, False if not
+    """
+    row = data.execute("SELECT 1 FROM users WHERE username = ?", (username,),).fetchone() # searchs for a row with the username the user entered on the login screen
+    return row is not None # if a row with the username isnt found then row = None, if something was found row is not none and hence returns true
 
 #instances for the buttons      
 buttonLogin = Button(640, 500, loginButton,0.5)
@@ -101,6 +132,7 @@ confirmButton = Button(780, 800, confirmImg, 1)
 rect_login = pygame.Rect(640, 10, 640, 1920)
 loginTextRect = pygame.Rect(640,550, 500,50)
 signupTextRect = pygame.Rect(640,630, 500,50)
+menuWhiteRect = pygame.Rect(0,0,1920,1080)
 
 #naming game window
 pygame.display.set_caption("login/setup screen")
@@ -207,15 +239,29 @@ while run:
         textDraw("Confirm username:", normalFont, textColour, 640, 610)
 
     if username != usernameConfirm and signupActive == True:
-        textDraw("the usernames you have entered dont match, please try again", normalFont, (255,0,0), 750, 800)
+        textDraw("The usernames you have entered dont match, please try again.", normalFont, (255,0,0), 640, 700) #checks if the username is the same from both times it was entered
     
     textDraw( username, normalFont, inputColour, 640, 560)
     textDraw( usernameConfirm, normalFont, inputColour, 640, 640)
 
-    if userEntered == True:
-        if confirmButton.draw() == True:
-                print("login")
-
     if newUser == True:
         if confirmButton.draw() == True:
-                print("sign up")
+            added = userAdd(username) #attempts to add the name to the databse
+
+    if added == True:
+        pygame.draw.rect(screen,(255,255,255), menuWhiteRect) # if the name is added the screen is blanked and black texted is displayed
+        textDraw("You have successfully made your new account!", welcomeFont, (0,0,0), 640,600)
+    elif added == False:
+        textDraw("The username you entered is already being used please try again.", normalFont, textColour, 640, 1000) #if the username is not unique it lets the user re enter a username
+        signupActive = True
+        loginActive = True
+
+    if userEntered == True:
+        if confirmButton.draw() == True:
+                searchResult = userSearch(username)
+    if searchResult == True:
+        pygame.draw.rect(screen,(255,255,255), menuWhiteRect) # if the name is found the screen goes white and shows they have logged in
+        textDraw("You have successfully loged into your account", welcomeFont, (0,0,0), 640,600)
+    elif searchResult == False:
+        textDraw("The username you entered is already being used please try again.", normalFont, textColour, 640, 1000) #if the username is not found this lets the user re-enter the username
+        loginActive = True
